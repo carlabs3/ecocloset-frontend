@@ -1,18 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const categoriaColor = {
-  bajo: "#7d9e7a",
-  medio: "#5a8a57",
-  "medio-alto": "#b07a30",
-  alto: "#cc4444",
-};
-
-const categoriaEmoji = {
-  bajo: "🌿",
-  medio: "🍃",
-  "medio-alto": "🌍",
-  alto: "🔥",
+const categoriaConfig = {
+  bajo: { nombre: "Baja", emoji: "🌿", color: "#7d9e7a" },
+  medio: { nombre: "Media", emoji: "🍃", color: "#5a8a57" },
+  alto: { nombre: "Alta", emoji: "🌍", color: "#b07a30" },
+  "muy alto": { nombre: "Muy alta", emoji: "🔥", color: "#cc4444" },
 };
 
 function History() {
@@ -27,9 +20,7 @@ function History() {
         const token = localStorage.getItem("token");
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/results`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         const data = await response.json();
         if (!response.ok) {
@@ -38,7 +29,7 @@ function History() {
         }
         setResultados(data);
       } catch (err) {
-        setError("Error de conexión con el servidor");
+        setError("Error de conexión");
       } finally {
         setLoading(false);
       }
@@ -46,7 +37,8 @@ function History() {
     fetchResultados();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
@@ -56,96 +48,95 @@ function History() {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      if (!response.ok) {
-        setError("No se pudo eliminar el resultado");
-        return;
-      }
+      if (!response.ok) return;
       setResultados(resultados.filter((r) => r._id !== id));
     } catch (err) {
-      setError("Error de conexión con el servidor");
+      console.error(err);
     }
   };
 
-  if (loading)
-    return (
-      <div className="page-center">
-        <p style={{ color: "var(--texto-muted)" }}>Cargando historial...</p>
-      </div>
-    );
+  if (loading) return <div className="page-center">Cargando historial...</div>;
 
   return (
     <div className="history-page">
       <div className="history-container">
-        <p className="history-tag">TU HISTORIAL</p>
-        <h1 className="history-title">Mis resultados</h1>
+        <p className="home-hero-tag">TU PROGRESO</p>
+        <h1
+          className="home-hero-title"
+          style={{ fontSize: "4rem", marginBottom: "40px" }}
+        >
+          Mis Huellas
+        </h1>
 
         {error && <div className="error-box">{error}</div>}
 
         {resultados.length === 0 ? (
-          <div className="history-empty">
-            <p className="history-empty-emoji">🌿</p>
-            <p className="history-empty-title">Aún no tienes resultados</p>
-            <p className="history-empty-text">
-              Haz el test para descubrir tu huella
-            </p>
-            <button className="auth-btn" onClick={() => navigate("/test")}>
-              Hacer el test
+          <div
+            className="results-header"
+            style={{ background: "var(--verde-lima)", textAlign: "center" }}
+          >
+            <p style={{ fontSize: "3rem" }}>🌿</p>
+            <p>Aún no has calculado tu impacto ambiental.</p>
+            <button
+              className="results-btn-primary"
+              style={{ marginTop: "30px" }}
+              onClick={() => navigate("/test")}
+            >
+              Empezar Test
             </button>
           </div>
         ) : (
           <div className="history-list">
-            {resultados.map((resultado) => (
-              <div
-                key={resultado._id}
-                className="history-item"
-                onClick={() => navigate(`/results/${resultado._id}`)}
-              >
-                <div className="history-item-left">
-                  <span className="history-item-emoji">
-                    {categoriaEmoji[resultado.category] || "🌿"}
-                  </span>
-                  <div>
-                    <p
-                      className="history-item-category"
-                      style={{
-                        color:
-                          categoriaColor[resultado.category] || "var(--verde)",
-                      }}
-                    >
-                      Huella {resultado.category}
-                    </p>
-                    <p className="history-item-metrics">
-                      {resultado.carbonFootprint}t CO₂ ·{" "}
-                      {(resultado.waterFootprint / 1000).toFixed(0)}K litros
-                    </p>
-                    <p className="history-item-date">
-                      {new Date(resultado.createdAt).toLocaleDateString(
-                        "es-ES",
-                        {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        },
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  className="history-delete-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(resultado._id);
-                  }}
+            {resultados.map((r) => {
+              const config = categoriaConfig[r.category] || {
+                nombre: r.category,
+                emoji: "❓",
+                color: "var(--texto-muted)",
+              };
+
+              return (
+                <div
+                  key={r._id}
+                  className="history-item"
+                  onClick={() => navigate(`/results/${r._id}`)}
                 >
-                  ×
-                </button>
-              </div>
-            ))}
+                  <div className="history-item-left">
+                    <span className="history-item-emoji">{config.emoji}</span>
+                    <div>
+                      <p
+                        className="history-item-category"
+                        style={{ color: config.color }}
+                      >
+                        Huella {config.nombre}
+                      </p>
+                      <p className="history-item-metrics">
+                        {r.carbonFootprint}t CO₂ /{" "}
+                        {r.waterFootprint.toLocaleString()} L
+                      </p>
+                      <p className="history-item-date">
+                        {new Date(r.createdAt).toLocaleDateString("es-ES", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    className="history-delete-btn"
+                    onClick={(e) => handleDelete(e, r._id)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              );
+            })}
             <button
-              className="history-new-btn"
+              className="results-btn-primary"
+              style={{ marginTop: "40px", width: "100%" }}
               onClick={() => navigate("/test")}
             >
-              Hacer nuevo test
+              Nuevo Test
             </button>
           </div>
         )}

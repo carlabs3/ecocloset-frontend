@@ -15,6 +15,12 @@ function Register() {
     setLoading(true);
     setError("");
 
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/auth/register`,

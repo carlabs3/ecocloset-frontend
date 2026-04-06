@@ -2,7 +2,15 @@ function QuestionCard({ pregunta, subtitulo, opciones, onRespuesta }) {
   return (
     <div>
       <h2 className="test-question">{pregunta}</h2>
-      <p className="test-subtitle">{subtitulo}</p>
+      <p
+        style={{
+          color: "rgba(255,255,255,0.7)",
+          marginBottom: "40px",
+          fontSize: "1.1rem",
+        }}
+      >
+        {subtitulo}
+      </p>
       <div className="test-options">
         {opciones.map((opcion) => (
           <button
@@ -10,7 +18,7 @@ function QuestionCard({ pregunta, subtitulo, opciones, onRespuesta }) {
             className="test-option"
             onClick={() => onRespuesta(opcion.value)}
           >
-            {opcion.label}
+            <span className="test-option-text">{opcion.label}</span>
           </button>
         ))}
       </div>

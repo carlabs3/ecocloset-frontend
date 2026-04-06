@@ -13,28 +13,29 @@ function Navbar() {
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-logo">
-        ECOCLOSET
+        ECOCLOSET <span style={{ color: "var(--verde)" }}>*</span>
       </Link>
+
       <div className="navbar-links">
         {user ? (
           <>
-            <Link to="/history" className="navbar-link-muted">
-              Mi historial
+            <Link to="/history" className="navbar-link">
+              Historial
             </Link>
-            <Link to="/test" className="navbar-link-green">
-              Nuevo test
+            <Link to="/test" className="navbar-link-btn">
+              Nuevo Test
             </Link>
-            <button onClick={handleLogout} className="navbar-btn-logout">
+            <button onClick={handleLogout} className="navbar-logout">
               Salir
             </button>
           </>
         ) : (
           <>
-            <Link to="/login" className="navbar-link-muted">
-              Entrar
+            <Link to="/login" className="navbar-link">
+              Login
             </Link>
-            <Link to="/register" className="navbar-btn-register">
-              Registrarse
+            <Link to="/register" className="navbar-link-btn">
+              Unirme
             </Link>
           </>
         )}

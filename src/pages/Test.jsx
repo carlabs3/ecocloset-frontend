@@ -79,6 +79,26 @@ const preguntas = [
     ],
   },
   {
+    id: "washTemp",
+    pregunta: "¿A qué temperatura lavas la ropa?",
+    subtitulo: "El agua fría ahorra hasta un 10% de energía",
+    opciones: [
+      { label: "Siempre en frío (30°C o menos)", value: "siempre" },
+      { label: "A veces en frío", value: "aveces" },
+      { label: "Siempre en caliente", value: "nunca" },
+    ],
+  },
+  {
+    id: "dryer",
+    pregunta: "¿Usas secadora?",
+    subtitulo: "Tu hábito habitual de secado",
+    opciones: [
+      { label: "Nunca, siempre al aire", value: "nunca" },
+      { label: "Ocasionalmente", value: "ocasionalmente" },
+      { label: "Habitualmente", value: "habitualmente" },
+    ],
+  },
+  {
     id: "clothingDestination",
     pregunta: "¿Qué haces con la ropa que dejas de usar?",
     subtitulo: "Tu opción más habitual",
@@ -100,116 +120,6 @@ const preguntas = [
   },
 ];
 
-const calcularLocal = (answers) => {
-  let carbon = 0;
-  let water = 0;
-
-  if (answers.wardrobeSize === "menos40") {
-    carbon = 200;
-    water = 200000;
-  } else if (answers.wardrobeSize === "40-80") {
-    carbon = 400;
-    water = 400000;
-  } else if (answers.wardrobeSize === "81-150") {
-    carbon = 700;
-    water = 700000;
-  } else if (answers.wardrobeSize === "mas150") {
-    carbon = 1000;
-    water = 1000000;
-  }
-
-  if (answers.fiberType === "algodon") {
-    carbon *= 1.1;
-    water *= 1.25;
-  } else if (answers.fiberType === "sintetica") {
-    carbon *= 1.2;
-    water *= 0.8;
-  } else if (answers.fiberType === "vaqueros") {
-    carbon *= 1.3;
-    water *= 1.4;
-  } else if (answers.fiberType === "lana") {
-    carbon *= 1.2;
-    water *= 0.9;
-  } else if (answers.fiberType === "organica") {
-    carbon *= 0.85;
-    water *= 0.85;
-  }
-
-  if (answers.newClothesPerYear === "menos5") {
-    carbon *= 0.8;
-    water *= 0.8;
-  } else if (answers.newClothesPerYear === "5-10") {
-    carbon *= 0.9;
-    water *= 0.9;
-  } else if (answers.newClothesPerYear === "mas20") {
-    carbon *= 1.2;
-    water *= 1.2;
-  }
-
-  if (answers.secondHand === "frecuentemente") {
-    carbon *= 0.85;
-    water *= 0.85;
-  } else if (answers.secondHand === "ocasionalmente") {
-    carbon *= 0.95;
-    water *= 0.95;
-  } else if (answers.secondHand === "nunca") {
-    carbon *= 1.1;
-    water *= 1.1;
-  }
-
-  if (answers.sustainableFabrics === "siempre") {
-    carbon *= 0.85;
-    water *= 0.85;
-  } else if (answers.sustainableFabrics === "aveces") {
-    carbon *= 0.95;
-    water *= 0.95;
-  }
-
-  if (answers.clothingDuration === "mas6") {
-    carbon *= 0.8;
-    water *= 0.8;
-  } else if (answers.clothingDuration === "4-6") {
-    carbon *= 0.9;
-    water *= 0.9;
-  } else if (answers.clothingDuration === "menos1") {
-    carbon *= 1.2;
-    water *= 1.2;
-  }
-
-  if (answers.washFrequency === "pocousos") {
-    water *= 1.05;
-  } else if (answers.washFrequency === "siempre") {
-    water *= 1.1;
-  }
-
-  if (answers.clothingDestination === "donar") {
-    carbon *= 0.9;
-    water *= 0.9;
-  } else if (answers.clothingDestination === "basura") {
-    carbon *= 1.1;
-    water *= 1.1;
-  }
-
-  if (answers.recycling === "siempre") {
-    carbon *= 0.95;
-    water *= 0.95;
-  } else if (answers.recycling === "nunca") {
-    carbon *= 1.05;
-    water *= 1.05;
-  }
-
-  const carbonTonnes = parseFloat((carbon / 1000).toFixed(3));
-  const waterLitres = Math.round(water);
-
-  let category;
-  if (carbonTonnes < 0.4) category = "bajo";
-  else if (carbonTonnes < 0.8) category = "medio";
-  else if (carbonTonnes < 1.5) category = "medio-alto";
-  else category = "alto";
-
-  return { carbonTonnes, waterLitres, category };
-};
-
 function Test() {
   const [paso, setPaso] = useState(0);
   const [respuestas, setRespuestas] = useState({});
@@ -227,12 +137,12 @@ function Test() {
     if (paso < preguntas.length - 1) {
       setPaso(paso + 1);
     } else {
+      setLoading(true);
+      setError("");
       const token = localStorage.getItem("token");
 
       if (token) {
         // Usuario logueado → guarda en backend
-        setLoading(true);
-        setError("");
         try {
           const response = await fetch(
             `${import.meta.env.VITE_API_URL}/api/results`,
@@ -257,11 +167,29 @@ function Test() {
           setLoading(false);
         }
       } else {
-        // Usuario no logueado → calcula en local y pasa datos por URL
-        const resultado = calcularLocal(nuevasRespuestas);
-        navigate(
-          `/results/preview?carbon=${resultado.carbonTonnes}&water=${resultado.waterLitres}&category=${resultado.category}`,
-        );
+        // Usuario no logueado → calcula en backend sin guardar
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/results/calculate`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ answers: nuevasRespuestas }),
+            },
+          );
+          const data = await response.json();
+          if (!response.ok) {
+            setError("Error al calcular el resultado.");
+            setLoading(false);
+            return;
+          }
+          navigate(
+            `/results/preview?carbon=${data.carbonTonnes}&water=${data.waterLitres}&category=${data.category}`,
+          );
+        } catch (err) {
+          setError("Error de conexión con el servidor");
+          setLoading(false);
+        }
       }
     }
   };

@@ -7,6 +7,95 @@ import {
 } from "react-router-dom";
 import ResultCard from "../components/ResultCard";
 
+const MAX_CARBONO = 4;
+const MAX_AGUA_K = 3000;
+
+const getWaterEquivalence = (litros) => {
+  const piscinaStandard = 50000; // 50.000L
+  const cantidad = (litros / piscinaStandard).toFixed(1);
+
+  return (
+    <>
+      EQUIVALE A <span className="highlight-num">{cantidad}</span> PISCINAS
+      ESTÁNDAR
+    </>
+  );
+};
+
+const getCarbonEquivalence = (toneladas) => {
+  const trayectos = (toneladas / 0.15).toFixed(1);
+  return (
+    <>
+      EQUIVALE A <span className="highlight-num">{trayectos}</span> TRAYECTOS
+      MADRID-PARÍS
+    </>
+  );
+};
+
+const getFeedbackMessage = (userVal, avgVal, type) => {
+  const isBelow = userVal < avgVal;
+  const ratio = userVal / avgVal;
+
+  if (isBelow) {
+    if (ratio < 0.5)
+      return "¡Increíble! Tu huella es ejemplar, muy por debajo de la media.";
+    return "¡Buen trabajo! Estás por debajo de la media global.";
+  } else {
+    if (ratio > 1.5)
+      return "Cuidado, tu impacto es crítico. Necesitas cambios urgentes.";
+    return "Estás por encima de la media. Hay margen de mejora.";
+  }
+};
+const ComparisonBarChart = ({
+  title,
+  userValue,
+  avgValue,
+  unit,
+  maxValue,
+  color,
+  equivalence,
+  feedback,
+}) => {
+  const userHeight = Math.min((userValue / maxValue) * 100, 100);
+  const avgHeight = Math.min((avgValue / maxValue) * 100, 100);
+
+  return (
+    <div className="bar-chart-container">
+      <h4 className="bar-chart-title">{title}</h4>
+      <div className="bar-chart-area">
+        <div className="bar-wrapper">
+          <div className="bar-value">
+            {userValue.toLocaleString()}
+            {unit}
+          </div>
+          <div
+            className="bar-pill user-bar"
+            style={{ height: `${userHeight}%`, backgroundColor: color }}
+          ></div>
+          <div className="bar-label">TÚ</div>
+        </div>
+        <div className="bar-wrapper">
+          <div className="bar-value">
+            {avgValue.toLocaleString()}
+            {unit}
+          </div>
+          <div
+            className="bar-pill global-bar"
+            style={{ height: `${avgHeight}%` }}
+          ></div>
+          <div className="bar-label">GLOBAL</div>
+        </div>
+      </div>
+
+      <p className="bar-feedback-msg">{feedback}</p>
+
+      <div className="equivalence-tag">
+        <p>{equivalence}</p>
+      </div>
+    </div>
+  );
+};
+
 function Results() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -27,21 +116,19 @@ function Results() {
         const data = await response.json();
         setStats(data);
       } catch (err) {
-        console.log("No se pudieron cargar las estadísticas");
+        console.log("Error stats");
       }
     };
 
-    fetchStats();
-
-    if (esPreview) {
-      setResultado({
-        carbonFootprint: parseFloat(searchParams.get("carbon")),
-        waterFootprint: parseInt(searchParams.get("water")),
-        category: searchParams.get("category"),
-      });
-      setLoading(false);
-    } else {
-      const fetchResultado = async () => {
+    const fetchDatos = async () => {
+      if (esPreview) {
+        setResultado({
+          carbonFootprint: parseFloat(searchParams.get("carbon")),
+          waterFootprint: parseInt(searchParams.get("water")),
+          category: searchParams.get("category"),
+        });
+        setLoading(false);
+      } else {
         try {
           const token = localStorage.getItem("token");
           const response = await fetch(
@@ -51,77 +138,44 @@ function Results() {
             },
           );
           const data = await response.json();
-          if (!response.ok) {
-            setError("No se pudo cargar el resultado");
-            return;
-          }
           setResultado(data);
         } catch (err) {
-          setError("Error de conexión con el servidor");
+          setError("Error");
         } finally {
           setLoading(false);
         }
-      };
-      fetchResultado();
-    }
-  }, [id]);
+      }
+    };
 
-  if (loading)
-    return (
-      <div className="page-center">
-        <p style={{ color: "var(--texto-muted)" }}>Cargando resultado...</p>
-      </div>
-    );
+    fetchStats();
+    fetchDatos();
+  }, [id, esPreview, searchParams]);
 
-  if (error)
-    return (
-      <div className="page-center">
-        <p style={{ color: "#cc0000" }}>{error}</p>
-      </div>
-    );
-
-  const porDebajoMedia = stats && resultado.carbonFootprint < stats.avgCarbon;
+  if (loading) return <div className="page-center">CARGANDO...</div>;
 
   return (
     <div className="results-page">
       <div className="results-container">
         {esPreview && (
           <div
+            className="results-header"
             style={{
               background: "var(--negro)",
-              color: "#fff",
-              borderRadius: "12px",
-              padding: "20px 24px",
-              marginBottom: "24px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "16px",
-              flexWrap: "wrap",
+              color: "white",
+              marginBottom: "20px",
             }}
           >
-            <div>
-              <p style={{ fontWeight: "500", marginBottom: "4px" }}>
-                ¿Quieres guardar tu resultado?
-              </p>
-              <p style={{ fontSize: "13px", color: "#aaa" }}>
-                Crea una cuenta gratuita para ver tu historial y seguir tu
-                progreso
-              </p>
-            </div>
+            <h2>¿GUARDAR RESULTADO?</h2>
             <Link
               to="/register"
+              className="home-hero-btn"
               style={{
-                background: "var(--verde)",
-                color: "#fff",
-                padding: "10px 20px",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "500",
-                whiteSpace: "nowrap",
+                marginTop: "20px",
+                background: "var(--verde-lima)",
+                color: "var(--negro)",
               }}
             >
-              Crear cuenta
+              REGISTRARSE
             </Link>
           </div>
         )}
@@ -132,162 +186,55 @@ function Results() {
           category={resultado.category}
         />
 
-        {/* Comparación con la media */}
-        {stats && stats.totalTests > 1 && (
-          <div
-            style={{
-              background: "#fff",
-              border: "0.5px solid var(--borde)",
-              borderRadius: "12px",
-              padding: "24px",
-              marginBottom: "24px",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "16px",
-                fontWeight: "500",
-                marginBottom: "16px",
-              }}
-            >
-              Tu huella vs la media de usuarios
-            </h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-                marginBottom: "16px",
-              }}
-            >
-              <div
-                style={{
-                  background: "var(--crema)",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  textAlign: "center",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "11px",
-                    color: "var(--texto-muted)",
-                    letterSpacing: "0.08em",
-                    marginBottom: "6px",
-                  }}
-                >
-                  MEDIA USUARIOS
-                </p>
-                <p
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "500",
-                    color: "var(--negro)",
-                    marginBottom: "2px",
-                  }}
-                >
-                  {stats.avgCarbon}t
-                </p>
-                <p style={{ fontSize: "11px", color: "var(--texto-muted)" }}>
-                  CO₂ / año
-                </p>
-              </div>
-              <div
-                style={{
-                  background: "var(--crema)",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  textAlign: "center",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "11px",
-                    color: "var(--texto-muted)",
-                    letterSpacing: "0.08em",
-                    marginBottom: "6px",
-                  }}
-                >
-                  TU HUELLA
-                </p>
-                <p
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "500",
-                    color: porDebajoMedia ? "var(--verde)" : "#cc4444",
-                    marginBottom: "2px",
-                  }}
-                >
-                  {resultado.carbonFootprint}t
-                </p>
-                <p style={{ fontSize: "11px", color: "var(--texto-muted)" }}>
-                  CO₂ / año
-                </p>
-              </div>
+        {stats && stats.totalTests >= 2 && (
+          <div className="comparison-infographic">
+            <h3 className="info-title">TU IMPACTO VS COMUNIDAD</h3>
+            <div className="charts-grid">
+              <ComparisonBarChart
+                title="HUELLA DE CARBONO"
+                userValue={resultado.carbonFootprint}
+                avgValue={stats.avgCarbon}
+                unit="t CO₂"
+                maxValue={3}
+                color="var(--verde)"
+                equivalence={getCarbonEquivalence(resultado.carbonFootprint)}
+                feedback={getFeedbackMessage(
+                  resultado.carbonFootprint,
+                  stats.avgCarbon,
+                  "carbon",
+                )}
+              />
+              <ComparisonBarChart
+                title="HUELLA DE AGUA"
+                userValue={resultado.waterFootprint}
+                avgValue={stats.avgWater}
+                unit="L"
+                maxValue={2000000}
+                color="#4a7aaa"
+                equivalence={getWaterEquivalence(resultado.waterFootprint)}
+                feedback={getFeedbackMessage(
+                  resultado.waterFootprint,
+                  stats.avgWater,
+                  "water",
+                )}
+              />
             </div>
-            <div
-              style={{
-                background: porDebajoMedia ? "var(--verde-claro)" : "#fff0f0",
-                border: `0.5px solid ${porDebajoMedia ? "var(--verde)" : "#ffcccc"}`,
-                borderRadius: "8px",
-                padding: "12px 16px",
-                fontSize: "14px",
-                color: porDebajoMedia ? "#2a4a27" : "#cc0000",
-              }}
-            >
-              {porDebajoMedia
-                ? `✅ Tu huella está por debajo de la media. ¡Buen trabajo!`
-                : `⚠️ Tu huella está por encima de la media. Pequeños cambios marcan la diferencia.`}
-            </div>
-            <p
-              style={{
-                fontSize: "12px",
-                color: "var(--texto-muted)",
-                marginTop: "12px",
-                textAlign: "center",
-              }}
-            >
-              Basado en {stats.totalTests} tests realizados en EcoCloset
+            <p className="stats-footer">
+              Basado en {stats.totalTests} análisis realizados.
             </p>
           </div>
         )}
-
-        <div className="results-tips">
-          <h3 className="results-tips-title">Claves para mejorar</h3>
-          <div className="results-tips-list">
-            {[
-              {
-                icono: "👕",
-                texto: "Menos es mejor: reduce cantidad, no estilo",
-              },
-              {
-                icono: "💧",
-                texto: "Lava menos y en frío: ahorra agua y energía",
-              },
-              {
-                icono: "🔁",
-                texto: "Alarga la vida útil: repara, personaliza, intercambia",
-              },
-              { icono: "♻️", texto: "Usa la segunda mano y recicla textil" },
-            ].map((consejo, i) => (
-              <div key={i} className="results-tip">
-                <span style={{ fontSize: "16px" }}>{consejo.icono}</span>
-                <p className="results-tip-text">{consejo.texto}</p>
-              </div>
-            ))}
-          </div>
-        </div>
 
         <div className="results-actions">
           <button
             className="results-btn-primary"
             onClick={() => navigate("/test")}
           >
-            Repetir test
+            REPETIR TEST
           </button>
           {!esPreview && (
             <Link to="/history" className="results-btn-secondary">
-              Ver historial
+              HISTORIAL
             </Link>
           )}
         </div>
