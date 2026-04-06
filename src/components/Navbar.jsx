@@ -11,64 +11,29 @@ function Navbar() {
   };
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "16px 24px",
-        background: "var(--negro)",
-        color: "#fff",
-      }}
-    >
-      <Link
-        to="/"
-        style={{ color: "#fff", fontWeight: "500", letterSpacing: "0.05em" }}
-      >
+    <nav className="navbar">
+      <Link to="/" className="navbar-logo">
         ECOCLOSET
       </Link>
-      <div
-        style={{
-          display: "flex",
-          gap: "16px",
-          alignItems: "center",
-          fontSize: "13px",
-        }}
-      >
+      <div className="navbar-links">
         {user ? (
           <>
-            <Link to="/history" style={{ color: "#aaa" }}>
+            <Link to="/history" className="navbar-link-muted">
               Mi historial
             </Link>
-            <Link to="/test" style={{ color: "var(--verde)" }}>
+            <Link to="/test" className="navbar-link-green">
               Nuevo test
             </Link>
-            <button
-              onClick={handleLogout}
-              style={{
-                background: "none",
-                color: "#aaa",
-                fontSize: "13px",
-              }}
-            >
+            <button onClick={handleLogout} className="navbar-btn-logout">
               Salir
             </button>
           </>
         ) : (
           <>
-            <Link to="/login" style={{ color: "#aaa" }}>
+            <Link to="/login" className="navbar-link-muted">
               Entrar
             </Link>
-            <Link
-              to="/register"
-              style={{
-                background: "var(--verde)",
-                color: "#fff",
-                padding: "6px 14px",
-                borderRadius: "6px",
-                fontSize: "13px",
-              }}
-            >
+            <Link to="/register" className="navbar-btn-register">
               Registrarse
             </Link>
           </>

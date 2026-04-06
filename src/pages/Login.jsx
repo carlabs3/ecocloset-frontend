@@ -24,14 +24,11 @@ function Login() {
           body: JSON.stringify({ email, password }),
         },
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         setError(data.message || "Email o contraseña incorrectos");
         return;
       }
-
       login(data.token, data.email);
       navigate("/history");
     } catch (err) {
@@ -42,155 +39,44 @@ function Login() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "90vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        background: "var(--crema)",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          border: "0.5px solid var(--borde)",
-          borderRadius: "16px",
-          padding: "40px",
-          width: "100%",
-          maxWidth: "400px",
-        }}
-      >
-        <p
-          style={{
-            color: "var(--verde)",
-            fontSize: "12px",
-            letterSpacing: "0.15em",
-            marginBottom: "8px",
-          }}
-        >
-          ECOCLOSET
-        </p>
-        <h1
-          style={{ fontSize: "24px", fontWeight: "500", marginBottom: "8px" }}
-        >
-          Bienvenida de nuevo
-        </h1>
-        <p
-          style={{
-            color: "var(--texto-muted)",
-            fontSize: "14px",
-            marginBottom: "32px",
-          }}
-        >
-          Accede a tu historial de resultados
-        </p>
+    <div className="auth-page">
+      <div className="auth-card">
+        <p className="auth-tag">ECOCLOSET</p>
+        <h1 className="auth-title">Bienvenida de nuevo</h1>
+        <p className="auth-subtitle">Accede a tu historial de resultados</p>
 
-        {error && (
-          <div
-            style={{
-              background: "#fff0f0",
-              border: "0.5px solid #ffcccc",
-              borderRadius: "8px",
-              padding: "12px",
-              marginBottom: "16px",
-              fontSize: "14px",
-              color: "#cc0000",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div className="error-box">{error}</div>}
 
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-        >
+        <form className="auth-form" onSubmit={handleSubmit}>
           <div>
-            <label
-              style={{
-                fontSize: "13px",
-                color: "var(--texto-muted)",
-                display: "block",
-                marginBottom: "6px",
-              }}
-            >
-              Email
-            </label>
+            <label className="auth-label">Email</label>
             <input
+              className="auth-input"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="tu@email.com"
-              style={{
-                width: "100%",
-                padding: "12px",
-                border: "0.5px solid var(--borde)",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-              }}
             />
           </div>
           <div>
-            <label
-              style={{
-                fontSize: "13px",
-                color: "var(--texto-muted)",
-                display: "block",
-                marginBottom: "6px",
-              }}
-            >
-              Contraseña
-            </label>
+            <label className="auth-label">Contraseña</label>
             <input
+              className="auth-input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{
-                width: "100%",
-                padding: "12px",
-                border: "0.5px solid var(--borde)",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-              }}
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              background: "var(--negro)",
-              color: "#fff",
-              padding: "14px",
-              borderRadius: "8px",
-              fontSize: "15px",
-              fontWeight: "500",
-              opacity: loading ? 0.7 : 1,
-              cursor: "pointer",
-            }}
-          >
+          <button className="auth-btn" type="submit" disabled={loading}>
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: "24px",
-            fontSize: "14px",
-            color: "var(--texto-muted)",
-          }}
-        >
+        <p className="auth-footer">
           ¿No tienes cuenta?{" "}
-          <Link
-            to="/register"
-            style={{ color: "var(--verde)", fontWeight: "500" }}
-          >
+          <Link to="/register" className="auth-footer-link">
             Regístrate gratis
           </Link>
         </p>

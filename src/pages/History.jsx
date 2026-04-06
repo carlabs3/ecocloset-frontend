@@ -66,152 +66,59 @@ function History() {
     }
   };
 
-  if (loading) {
+  if (loading)
     return (
-      <div
-        style={{
-          minHeight: "90vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--crema)",
-        }}
-      >
+      <div className="page-center">
         <p style={{ color: "var(--texto-muted)" }}>Cargando historial...</p>
       </div>
     );
-  }
 
   return (
-    <div
-      style={{
-        background: "var(--crema)",
-        minHeight: "90vh",
-        padding: "40px 24px",
-      }}
-    >
-      <div style={{ maxWidth: "560px", margin: "0 auto" }}>
-        <p
-          style={{
-            fontSize: "12px",
-            color: "var(--verde)",
-            letterSpacing: "0.1em",
-            marginBottom: "8px",
-          }}
-        >
-          TU HISTORIAL
-        </p>
-        <h1
-          style={{ fontSize: "28px", fontWeight: "500", marginBottom: "32px" }}
-        >
-          Mis resultados
-        </h1>
+    <div className="history-page">
+      <div className="history-container">
+        <p className="history-tag">TU HISTORIAL</p>
+        <h1 className="history-title">Mis resultados</h1>
 
-        {error && (
-          <div
-            style={{
-              background: "#fff0f0",
-              border: "0.5px solid #ffcccc",
-              borderRadius: "8px",
-              padding: "12px",
-              marginBottom: "16px",
-              fontSize: "14px",
-              color: "#cc0000",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div className="error-box">{error}</div>}
 
         {resultados.length === 0 ? (
-          <div
-            style={{
-              background: "#fff",
-              border: "0.5px solid var(--borde)",
-              borderRadius: "12px",
-              padding: "40px",
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontSize: "32px", marginBottom: "12px" }}>🌿</p>
-            <p style={{ fontWeight: "500", marginBottom: "8px" }}>
-              Aún no tienes resultados
-            </p>
-            <p
-              style={{
-                color: "var(--texto-muted)",
-                fontSize: "14px",
-                marginBottom: "24px",
-              }}
-            >
+          <div className="history-empty">
+            <p className="history-empty-emoji">🌿</p>
+            <p className="history-empty-title">Aún no tienes resultados</p>
+            <p className="history-empty-text">
               Haz el test para descubrir tu huella
             </p>
-            <button
-              onClick={() => navigate("/test")}
-              style={{
-                background: "var(--negro)",
-                color: "#fff",
-                padding: "12px 24px",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "500",
-                cursor: "pointer",
-              }}
-            >
+            <button className="auth-btn" onClick={() => navigate("/test")}>
               Hacer el test
             </button>
           </div>
         ) : (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
+          <div className="history-list">
             {resultados.map((resultado) => (
               <div
                 key={resultado._id}
-                style={{
-                  background: "#fff",
-                  border: "0.5px solid var(--borde)",
-                  borderRadius: "12px",
-                  padding: "20px 24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  cursor: "pointer",
-                }}
+                className="history-item"
                 onClick={() => navigate(`/results/${resultado._id}`)}
               >
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "16px" }}
-                >
-                  <span style={{ fontSize: "24px" }}>
+                <div className="history-item-left">
+                  <span className="history-item-emoji">
                     {categoriaEmoji[resultado.category] || "🌿"}
                   </span>
                   <div>
                     <p
+                      className="history-item-category"
                       style={{
-                        fontWeight: "500",
-                        fontSize: "15px",
                         color:
                           categoriaColor[resultado.category] || "var(--verde)",
-                        marginBottom: "4px",
-                        textTransform: "capitalize",
                       }}
                     >
                       Huella {resultado.category}
                     </p>
-                    <p
-                      style={{ fontSize: "13px", color: "var(--texto-muted)" }}
-                    >
+                    <p className="history-item-metrics">
                       {resultado.carbonFootprint}t CO₂ ·{" "}
                       {(resultado.waterFootprint / 1000).toFixed(0)}K litros
                     </p>
-                    <p
-                      style={{
-                        fontSize: "12px",
-                        color: "var(--texto-muted)",
-                        marginTop: "2px",
-                      }}
-                    >
+                    <p className="history-item-date">
                       {new Date(resultado.createdAt).toLocaleDateString(
                         "es-ES",
                         {
@@ -224,36 +131,19 @@ function History() {
                   </div>
                 </div>
                 <button
+                  className="history-delete-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(resultado._id);
-                  }}
-                  style={{
-                    background: "none",
-                    color: "#ccc",
-                    fontSize: "18px",
-                    padding: "4px 8px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
                   }}
                 >
                   ×
                 </button>
               </div>
             ))}
-
             <button
+              className="history-new-btn"
               onClick={() => navigate("/test")}
-              style={{
-                background: "var(--negro)",
-                color: "#fff",
-                padding: "14px",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "500",
-                marginTop: "8px",
-                cursor: "pointer",
-              }}
             >
               Hacer nuevo test
             </button>

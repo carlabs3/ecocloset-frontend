@@ -1,253 +1,260 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-
-const categoriaInfo = {
-  bajo: {
-    emoji: "🌿",
-    titulo: "Huella baja",
-    descripcion:
-      "Ropa duradera y consumo consciente. Eres un modelo de sostenibilidad.",
-    color: "#7d9e7a",
-    fondo: "#f0f5ee",
-  },
-  medio: {
-    emoji: "🍃",
-    titulo: "Huella media",
-    descripcion:
-      "Buen equilibrio. Alargar la vida útil o usar más segunda mano reduciría aún más tu impacto.",
-    color: "#5a8a57",
-    fondo: "#e8f2e6",
-  },
-  "medio-alto": {
-    emoji: "🌍",
-    titulo: "Huella media-alta",
-    descripcion: "Hay margen de mejora en frecuencia de compra y lavado.",
-    color: "#b07a30",
-    fondo: "#f5ede0",
-  },
-  alto: {
-    emoji: "🔥",
-    titulo: "Huella alta",
-    descripcion:
-      "No es cuestión de culpa: conocerlo permite tomar decisiones informadas.",
-    color: "#cc4444",
-    fondo: "#fff0f0",
-  },
-};
+import {
+  useParams,
+  useNavigate,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
+import ResultCard from "../components/ResultCard";
 
 function Results() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [resultado, setResultado] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const esPreview = id === "preview";
+
   useEffect(() => {
-    const fetchResultado = async () => {
+    const fetchStats = async () => {
       try {
-        const token = localStorage.getItem("token");
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/results/${id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          `${import.meta.env.VITE_API_URL}/api/results/stats`,
         );
         const data = await response.json();
-        if (!response.ok) {
-          setError("No se pudo cargar el resultado");
-          return;
-        }
-        setResultado(data);
+        setStats(data);
       } catch (err) {
-        setError("Error de conexión con el servidor");
-      } finally {
-        setLoading(false);
+        console.log("No se pudieron cargar las estadísticas");
       }
     };
-    fetchResultado();
+
+    fetchStats();
+
+    if (esPreview) {
+      setResultado({
+        carbonFootprint: parseFloat(searchParams.get("carbon")),
+        waterFootprint: parseInt(searchParams.get("water")),
+        category: searchParams.get("category"),
+      });
+      setLoading(false);
+    } else {
+      const fetchResultado = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/results/${id}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
+          const data = await response.json();
+          if (!response.ok) {
+            setError("No se pudo cargar el resultado");
+            return;
+          }
+          setResultado(data);
+        } catch (err) {
+          setError("Error de conexión con el servidor");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchResultado();
+    }
   }, [id]);
 
-  if (loading) {
+  if (loading)
     return (
-      <div
-        style={{
-          minHeight: "90vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--crema)",
-        }}
-      >
+      <div className="page-center">
         <p style={{ color: "var(--texto-muted)" }}>Cargando resultado...</p>
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
-      <div
-        style={{
-          minHeight: "90vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--crema)",
-        }}
-      >
+      <div className="page-center">
         <p style={{ color: "#cc0000" }}>{error}</p>
       </div>
     );
-  }
 
-  const info = categoriaInfo[resultado.category] || categoriaInfo["medio"];
+  const porDebajoMedia = stats && resultado.carbonFootprint < stats.avgCarbon;
 
   return (
-    <div
-      style={{
-        background: "var(--crema)",
-        minHeight: "90vh",
-        padding: "40px 24px",
-      }}
-    >
-      <div style={{ maxWidth: "560px", margin: "0 auto" }}>
-        <div
-          style={{
-            background: info.fondo,
-            border: `0.5px solid ${info.color}`,
-            borderRadius: "16px",
-            padding: "32px",
-            textAlign: "center",
-            marginBottom: "24px",
-          }}
-        >
-          <p style={{ fontSize: "48px", marginBottom: "12px" }}>{info.emoji}</p>
-          <p
+    <div className="results-page">
+      <div className="results-container">
+        {esPreview && (
+          <div
             style={{
-              fontSize: "12px",
-              color: info.color,
-              letterSpacing: "0.1em",
-              marginBottom: "8px",
+              background: "var(--negro)",
+              color: "#fff",
+              borderRadius: "12px",
+              padding: "20px 24px",
+              marginBottom: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              flexWrap: "wrap",
             }}
           >
-            TU HUELLA
-          </p>
-          <h1
-            style={{
-              fontSize: "28px",
-              fontWeight: "500",
-              marginBottom: "12px",
-            }}
-          >
-            {info.titulo}
-          </h1>
-          <p
-            style={{
-              color: "var(--texto-muted)",
-              fontSize: "14px",
-              lineHeight: "1.6",
-            }}
-          >
-            {info.descripcion}
-          </p>
-        </div>
+            <div>
+              <p style={{ fontWeight: "500", marginBottom: "4px" }}>
+                ¿Quieres guardar tu resultado?
+              </p>
+              <p style={{ fontSize: "13px", color: "#aaa" }}>
+                Crea una cuenta gratuita para ver tu historial y seguir tu
+                progreso
+              </p>
+            </div>
+            <Link
+              to="/register"
+              style={{
+                background: "var(--verde)",
+                color: "#fff",
+                padding: "10px 20px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "500",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Crear cuenta
+            </Link>
+          </div>
+        )}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "16px",
-            marginBottom: "24px",
-          }}
-        >
+        <ResultCard
+          carbon={resultado.carbonFootprint}
+          water={resultado.waterFootprint}
+          category={resultado.category}
+        />
+
+        {/* Comparación con la media */}
+        {stats && stats.totalTests > 1 && (
           <div
             style={{
               background: "#fff",
               border: "0.5px solid var(--borde)",
               borderRadius: "12px",
               padding: "24px",
-              textAlign: "center",
+              marginBottom: "24px",
             }}
           >
+            <h3
+              style={{
+                fontSize: "16px",
+                fontWeight: "500",
+                marginBottom: "16px",
+              }}
+            >
+              Tu huella vs la media de usuarios
+            </h3>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+                marginBottom: "16px",
+              }}
+            >
+              <div
+                style={{
+                  background: "var(--crema)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--texto-muted)",
+                    letterSpacing: "0.08em",
+                    marginBottom: "6px",
+                  }}
+                >
+                  MEDIA USUARIOS
+                </p>
+                <p
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "500",
+                    color: "var(--negro)",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {stats.avgCarbon}t
+                </p>
+                <p style={{ fontSize: "11px", color: "var(--texto-muted)" }}>
+                  CO₂ / año
+                </p>
+              </div>
+              <div
+                style={{
+                  background: "var(--crema)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "var(--texto-muted)",
+                    letterSpacing: "0.08em",
+                    marginBottom: "6px",
+                  }}
+                >
+                  TU HUELLA
+                </p>
+                <p
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "500",
+                    color: porDebajoMedia ? "var(--verde)" : "#cc4444",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {resultado.carbonFootprint}t
+                </p>
+                <p style={{ fontSize: "11px", color: "var(--texto-muted)" }}>
+                  CO₂ / año
+                </p>
+              </div>
+            </div>
+            <div
+              style={{
+                background: porDebajoMedia ? "var(--verde-claro)" : "#fff0f0",
+                border: `0.5px solid ${porDebajoMedia ? "var(--verde)" : "#ffcccc"}`,
+                borderRadius: "8px",
+                padding: "12px 16px",
+                fontSize: "14px",
+                color: porDebajoMedia ? "#2a4a27" : "#cc0000",
+              }}
+            >
+              {porDebajoMedia
+                ? `✅ Tu huella está por debajo de la media. ¡Buen trabajo!`
+                : `⚠️ Tu huella está por encima de la media. Pequeños cambios marcan la diferencia.`}
+            </div>
             <p
               style={{
                 fontSize: "12px",
                 color: "var(--texto-muted)",
-                letterSpacing: "0.08em",
-                marginBottom: "8px",
+                marginTop: "12px",
+                textAlign: "center",
               }}
             >
-              CO₂ EQUIVALENTE
-            </p>
-            <p
-              style={{
-                fontSize: "32px",
-                fontWeight: "500",
-                color: "var(--negro)",
-                marginBottom: "4px",
-              }}
-            >
-              {resultado.carbonFootprint}t
-            </p>
-            <p style={{ fontSize: "12px", color: "var(--texto-muted)" }}>
-              toneladas / año
+              Basado en {stats.totalTests} tests realizados en EcoCloset
             </p>
           </div>
-          <div
-            style={{
-              background: "#fff",
-              border: "0.5px solid var(--borde)",
-              borderRadius: "12px",
-              padding: "24px",
-              textAlign: "center",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "12px",
-                color: "var(--texto-muted)",
-                letterSpacing: "0.08em",
-                marginBottom: "8px",
-              }}
-            >
-              HUELLA DE AGUA
-            </p>
-            <p
-              style={{
-                fontSize: "32px",
-                fontWeight: "500",
-                color: "#4a7aaa",
-                marginBottom: "4px",
-              }}
-            >
-              {(resultado.waterFootprint / 1000).toFixed(0)}K
-            </p>
-            <p style={{ fontSize: "12px", color: "var(--texto-muted)" }}>
-              litros / año
-            </p>
-          </div>
-        </div>
+        )}
 
-        <div
-          style={{
-            background: "#fff",
-            border: "0.5px solid var(--borde)",
-            borderRadius: "12px",
-            padding: "24px",
-            marginBottom: "24px",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "16px",
-              fontWeight: "500",
-              marginBottom: "16px",
-            }}
-          >
-            Claves para mejorar
-          </h3>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
+        <div className="results-tips">
+          <h3 className="results-tips-title">Claves para mejorar</h3>
+          <div className="results-tips-list">
             {[
               {
                 icono: "👕",
@@ -263,60 +270,26 @@ function Results() {
               },
               { icono: "♻️", texto: "Usa la segunda mano y recicla textil" },
             ].map((consejo, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  alignItems: "flex-start",
-                }}
-              >
+              <div key={i} className="results-tip">
                 <span style={{ fontSize: "16px" }}>{consejo.icono}</span>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "var(--texto-muted)",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  {consejo.texto}
-                </p>
+                <p className="results-tip-text">{consejo.texto}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div className="results-actions">
           <button
+            className="results-btn-primary"
             onClick={() => navigate("/test")}
-            style={{
-              flex: 1,
-              background: "var(--negro)",
-              color: "#fff",
-              padding: "14px",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "500",
-              cursor: "pointer",
-            }}
           >
             Repetir test
           </button>
-          <Link
-            to="/history"
-            style={{
-              flex: 1,
-              border: "0.5px solid var(--negro)",
-              color: "var(--negro)",
-              padding: "14px",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "500",
-              textAlign: "center",
-            }}
-          >
-            Ver historial
-          </Link>
+          {!esPreview && (
+            <Link to="/history" className="results-btn-secondary">
+              Ver historial
+            </Link>
+          )}
         </div>
       </div>
     </div>

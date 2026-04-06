@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createResult } from "../services/api";
+import QuestionCard from "../components/QuestionCard";
 
 const preguntas = [
   {
@@ -100,6 +100,116 @@ const preguntas = [
   },
 ];
 
+const calcularLocal = (answers) => {
+  let carbon = 0;
+  let water = 0;
+
+  if (answers.wardrobeSize === "menos40") {
+    carbon = 200;
+    water = 200000;
+  } else if (answers.wardrobeSize === "40-80") {
+    carbon = 400;
+    water = 400000;
+  } else if (answers.wardrobeSize === "81-150") {
+    carbon = 700;
+    water = 700000;
+  } else if (answers.wardrobeSize === "mas150") {
+    carbon = 1000;
+    water = 1000000;
+  }
+
+  if (answers.fiberType === "algodon") {
+    carbon *= 1.1;
+    water *= 1.25;
+  } else if (answers.fiberType === "sintetica") {
+    carbon *= 1.2;
+    water *= 0.8;
+  } else if (answers.fiberType === "vaqueros") {
+    carbon *= 1.3;
+    water *= 1.4;
+  } else if (answers.fiberType === "lana") {
+    carbon *= 1.2;
+    water *= 0.9;
+  } else if (answers.fiberType === "organica") {
+    carbon *= 0.85;
+    water *= 0.85;
+  }
+
+  if (answers.newClothesPerYear === "menos5") {
+    carbon *= 0.8;
+    water *= 0.8;
+  } else if (answers.newClothesPerYear === "5-10") {
+    carbon *= 0.9;
+    water *= 0.9;
+  } else if (answers.newClothesPerYear === "mas20") {
+    carbon *= 1.2;
+    water *= 1.2;
+  }
+
+  if (answers.secondHand === "frecuentemente") {
+    carbon *= 0.85;
+    water *= 0.85;
+  } else if (answers.secondHand === "ocasionalmente") {
+    carbon *= 0.95;
+    water *= 0.95;
+  } else if (answers.secondHand === "nunca") {
+    carbon *= 1.1;
+    water *= 1.1;
+  }
+
+  if (answers.sustainableFabrics === "siempre") {
+    carbon *= 0.85;
+    water *= 0.85;
+  } else if (answers.sustainableFabrics === "aveces") {
+    carbon *= 0.95;
+    water *= 0.95;
+  }
+
+  if (answers.clothingDuration === "mas6") {
+    carbon *= 0.8;
+    water *= 0.8;
+  } else if (answers.clothingDuration === "4-6") {
+    carbon *= 0.9;
+    water *= 0.9;
+  } else if (answers.clothingDuration === "menos1") {
+    carbon *= 1.2;
+    water *= 1.2;
+  }
+
+  if (answers.washFrequency === "pocousos") {
+    water *= 1.05;
+  } else if (answers.washFrequency === "siempre") {
+    water *= 1.1;
+  }
+
+  if (answers.clothingDestination === "donar") {
+    carbon *= 0.9;
+    water *= 0.9;
+  } else if (answers.clothingDestination === "basura") {
+    carbon *= 1.1;
+    water *= 1.1;
+  }
+
+  if (answers.recycling === "siempre") {
+    carbon *= 0.95;
+    water *= 0.95;
+  } else if (answers.recycling === "nunca") {
+    carbon *= 1.05;
+    water *= 1.05;
+  }
+
+  const carbonTonnes = parseFloat((carbon / 1000).toFixed(3));
+  const waterLitres = Math.round(water);
+
+  let category;
+  if (carbonTonnes < 0.4) category = "bajo";
+  else if (carbonTonnes < 0.8) category = "medio";
+  else if (carbonTonnes < 1.5) category = "medio-alto";
+  else category = "alto";
+
+  return { carbonTonnes, waterLitres, category };
+};
+
 function Test() {
   const [paso, setPaso] = useState(0);
   const [respuestas, setRespuestas] = useState({});
@@ -117,14 +227,41 @@ function Test() {
     if (paso < preguntas.length - 1) {
       setPaso(paso + 1);
     } else {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await createResult({ answers: nuevasRespuestas });
-        navigate(`/results/${res.data._id}`);
-      } catch (err) {
-        setError("Error al guardar el resultado. Inténtalo de nuevo.");
-        setLoading(false);
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        // Usuario logueado → guarda en backend
+        setLoading(true);
+        setError("");
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/results`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ answers: nuevasRespuestas }),
+            },
+          );
+          const data = await response.json();
+          if (!response.ok) {
+            setError("Error al guardar el resultado. Inténtalo de nuevo.");
+            setLoading(false);
+            return;
+          }
+          navigate(`/results/${data._id}`);
+        } catch (err) {
+          setError("Error de conexión con el servidor");
+          setLoading(false);
+        }
+      } else {
+        // Usuario no logueado → calcula en local y pasa datos por URL
+        const resultado = calcularLocal(nuevasRespuestas);
+        navigate(
+          `/results/preview?carbon=${resultado.carbonTonnes}&water=${resultado.waterLitres}&category=${resultado.category}`,
+        );
       }
     }
   };
@@ -135,22 +272,10 @@ function Test() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "90vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "16px",
-          background: "var(--crema)",
-        }}
-      >
-        <div style={{ fontSize: "32px" }}>🌿</div>
-        <p style={{ fontSize: "18px", fontWeight: "500" }}>
-          Calculando tu huella...
-        </p>
-        <p style={{ color: "var(--texto-muted)", fontSize: "14px" }}>
+      <div className="test-loading">
+        <p className="test-loading-emoji">🌿</p>
+        <p className="test-loading-title">Calculando tu huella...</p>
+        <p className="test-loading-subtitle">
           Analizando tus hábitos de consumo
         </p>
       </div>
@@ -158,141 +283,36 @@ function Test() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "90vh",
-        background: "var(--crema)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: "560px" }}>
-        {/* Barra de progreso */}
-        <div style={{ marginBottom: "40px" }}>
+    <div className="test-page">
+      <div className="test-container">
+        <div className="test-progress-header">
+          <span className="test-progress-tag">
+            PREGUNTA {paso + 1} DE {preguntas.length}
+          </span>
+          <span className="test-progress-percent">{Math.round(progreso)}%</span>
+        </div>
+        <div className="test-progress-bar">
           <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "8px",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "12px",
-                color: "var(--verde)",
-                letterSpacing: "0.1em",
-              }}
-            >
-              PREGUNTA {paso + 1} DE {preguntas.length}
-            </span>
-            <span style={{ fontSize: "12px", color: "var(--texto-muted)" }}>
-              {Math.round(progreso)}%
-            </span>
-          </div>
-          <div
-            style={{
-              height: "3px",
-              background: "var(--borde)",
-              borderRadius: "2px",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${progreso}%`,
-                background: "var(--verde)",
-                borderRadius: "2px",
-                transition: "width 0.3s ease",
-              }}
-            />
-          </div>
+            className="test-progress-fill"
+            style={{ width: `${progreso}%` }}
+          />
         </div>
 
-        {/* Pregunta */}
-        <h2
-          style={{
-            fontSize: "26px",
-            fontWeight: "500",
-            marginBottom: "8px",
-            lineHeight: "1.3",
-          }}
-        >
-          {preguntaActual.pregunta}
-        </h2>
-        <p
-          style={{
-            color: "var(--texto-muted)",
-            fontSize: "14px",
-            marginBottom: "32px",
-          }}
-        >
-          {preguntaActual.subtitulo}
-        </p>
+        <QuestionCard
+          pregunta={preguntaActual.pregunta}
+          subtitulo={preguntaActual.subtitulo}
+          opciones={preguntaActual.opciones}
+          onRespuesta={handleRespuesta}
+        />
 
-        {/* Opciones */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {preguntaActual.opciones.map((opcion) => (
-            <button
-              key={opcion.value}
-              onClick={() => handleRespuesta(opcion.value)}
-              style={{
-                background: "#fff",
-                border: "0.5px solid var(--borde)",
-                borderRadius: "12px",
-                padding: "18px 20px",
-                fontSize: "15px",
-                textAlign: "left",
-                color: "var(--negro)",
-                transition: "all 0.15s ease",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.borderColor = "var(--verde)";
-                e.target.style.background = "var(--verde-claro)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.borderColor = "var(--borde)";
-                e.target.style.background = "#fff";
-              }}
-            >
-              {opcion.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Error */}
         {error && (
-          <div
-            style={{
-              marginTop: "16px",
-              background: "#fff0f0",
-              border: "0.5px solid #ffcccc",
-              borderRadius: "8px",
-              padding: "12px",
-              fontSize: "14px",
-              color: "#cc0000",
-            }}
-          >
+          <div className="error-box" style={{ marginTop: "16px" }}>
             {error}
           </div>
         )}
 
-        {/* Botón atrás */}
         {paso > 0 && (
-          <button
-            onClick={handleAtras}
-            style={{
-              marginTop: "24px",
-              background: "none",
-              border: "none",
-              color: "var(--texto-muted)",
-              fontSize: "14px",
-              cursor: "pointer",
-            }}
-          >
+          <button className="test-back-btn" onClick={handleAtras}>
             ← Pregunta anterior
           </button>
         )}
