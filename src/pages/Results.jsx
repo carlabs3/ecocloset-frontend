@@ -195,7 +195,9 @@ function Results() {
                 userValue={resultado.carbonFootprint}
                 avgValue={stats.avgCarbon}
                 unit="t CO₂"
-                maxValue={3}
+                maxValue={
+                  Math.max(resultado.carbonFootprint, stats.avgCarbon) * 1.3
+                }
                 color="var(--verde)"
                 equivalence={getCarbonEquivalence(resultado.carbonFootprint)}
                 feedback={getFeedbackMessage(
@@ -209,7 +211,9 @@ function Results() {
                 userValue={resultado.waterFootprint}
                 avgValue={stats.avgWater}
                 unit="L"
-                maxValue={2000000}
+                maxValue={
+                  Math.max(resultado.waterFootprint, stats.avgWater) * 1.3
+                }
                 color="#4a7aaa"
                 equivalence={getWaterEquivalence(resultado.waterFootprint)}
                 feedback={getFeedbackMessage(
