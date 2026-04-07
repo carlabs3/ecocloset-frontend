@@ -22,8 +22,8 @@ const getWaterEquivalence = (litros) => {
   );
 };
 
-const getCarbonEquivalence = (toneladas) => {
-  const trayectos = (toneladas / 0.15).toFixed(1);
+const getCarbonEquivalence = (kg) => {
+  const trayectos = (kg / 150).toFixed(1);
   return (
     <>
       EQUIVALE A <span className="highlight-num">{trayectos}</span> TRAYECTOS
@@ -194,7 +194,7 @@ function Results() {
                 title="HUELLA DE CARBONO"
                 userValue={resultado.carbonFootprint}
                 avgValue={stats.avgCarbon}
-                unit="t CO₂"
+                unit=" kg CO₂"
                 maxValue={
                   Math.max(resultado.carbonFootprint, stats.avgCarbon) * 1.3
                 }
@@ -230,6 +230,14 @@ function Results() {
         )}
 
         <div className="results-actions">
+          {!esPreview && (
+            <button
+              className="results-btn-secondary"
+              onClick={() => navigate(`/test/${id}`)}
+            >
+              EDITAR RESPUESTAS
+            </button>
+          )}
           <button
             className="results-btn-primary"
             onClick={() => navigate("/test")}

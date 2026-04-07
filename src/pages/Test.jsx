@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import QuestionCard from "../components/QuestionCard";
 
 const preguntas = [
@@ -126,6 +126,29 @@ function Test() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { id } = useParams();
+
+  // Si hay id → cargar respuestas previas
+  useEffect(() => {
+    if (id) {
+      const fetchResultado = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/results/${id}`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          const data = await response.json();
+          if (response.ok) {
+            setRespuestas(data.answers);
+          }
+        } catch (err) {
+          console.error("Error cargando respuestas previas");
+        }
+      };
+      fetchResultado();
+    }
+  }, [id]);
 
   const preguntaActual = preguntas[paso];
   const progreso = (paso / preguntas.length) * 100;
@@ -142,22 +165,24 @@ function Test() {
       const token = localStorage.getItem("token");
 
       if (token) {
-        // Usuario logueado → guarda en backend
         try {
-          const response = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/results`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ answers: nuevasRespuestas }),
+          // Si hay id → PUT (actualizar), si no → POST (crear)
+          const url = id
+            ? `${import.meta.env.VITE_API_URL}/api/results/${id}`
+            : `${import.meta.env.VITE_API_URL}/api/results`;
+          const method = id ? "PUT" : "POST";
+
+          const response = await fetch(url, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
-          );
+            body: JSON.stringify({ answers: nuevasRespuestas }),
+          });
           const data = await response.json();
           if (!response.ok) {
-            setError("Error al guardar el resultado. Inténtalo de nuevo.");
+            setError("Error al guardar el resultado.");
             setLoading(false);
             return;
           }
@@ -167,7 +192,6 @@ function Test() {
           setLoading(false);
         }
       } else {
-        // Usuario no logueado → calcula en backend sin guardar
         try {
           const response = await fetch(
             `${import.meta.env.VITE_API_URL}/api/results/calculate`,
@@ -178,13 +202,8 @@ function Test() {
             },
           );
           const data = await response.json();
-          if (!response.ok) {
-            setError("Error al calcular el resultado.");
-            setLoading(false);
-            return;
-          }
           navigate(
-            `/results/preview?carbon=${data.carbonTonnes}&water=${data.waterLitres}&category=${data.category}`,
+            `/results/preview?carbon=${data.carbonKg}&water=${data.waterLitres}&category=${data.category}`,
           );
         } catch (err) {
           setError("Error de conexión con el servidor");
@@ -202,7 +221,9 @@ function Test() {
     return (
       <div className="test-loading">
         <p className="test-loading-emoji">🌿</p>
-        <p className="test-loading-title">Calculando tu huella...</p>
+        <p className="test-loading-title">
+          {id ? "Actualizando tu huella..." : "Calculando tu huella..."}
+        </p>
         <p className="test-loading-subtitle">
           Analizando tus hábitos de consumo
         </p>

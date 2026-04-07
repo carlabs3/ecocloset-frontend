@@ -26,6 +26,15 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/test/:id"
+          element={
+            <PrivateRoute>
+              {" "}
+              <Test />{" "}
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </>
   );
