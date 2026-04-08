@@ -12,7 +12,7 @@ function ResultCard({ carbon, water, category }) {
       emoji: "🍃",
       titulo: "Huella media",
       descripcion:
-        "Buen equilibrio. Alargar la vida útil o usar más segunda mano reduciría aún más tu impacto.",
+        "Buen equilibrio. Alargar la vida útil o usar más ropa de segunda mano reduciría aún más tu impacto.",
       color: "var(--verde-oscuro)",
       fondo: "#e8f2e6",
     },
